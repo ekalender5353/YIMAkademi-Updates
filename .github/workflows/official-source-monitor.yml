@@ -17,6 +17,7 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+
     steps:
       - name: Depoyu al
         uses: actions/checkout@v4
@@ -42,10 +43,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue create \
-            --title "PGM sınav/konu değişikliği adayı algılandı" \
-            --body-file .monitor/change-report.md \
-            --label "resmi-k/change-report.md \
-aynak-degisikligi" ||
-          gh issue create \
-            --title "PGM sınav/konu değişikliği adayı algılandı" \
+            --title "PGM sinav veya konu degisikligi algilandi" \
             --body-file .monitor/change-report.md
