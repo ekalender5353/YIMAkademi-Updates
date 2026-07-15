@@ -27,6 +27,7 @@ jobs:
         run: python3 scripts/monitor_official_sources.py
 
       - name: Izleme durumunu kaydet
+        if: steps.monitor.outputs.unavailable != 'true'
         run: |
           git add .monitor/state.json
           if git diff --cached --quiet; then
