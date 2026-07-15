@@ -15,6 +15,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
 
@@ -67,21 +68,32 @@ class LinkParser(HTMLParser):
 
 
 def fetch(url: str) -> str:
-    request = Request(
-        url,
-        headers={
-            "User-Agent": "YIMAkademi-OfficialMonitor/1.0 (+public update checker)",
-            "Accept": "text/html,application/xhtml+xml",
-        },
-    )
-    with urlopen(request, timeout=45) as response:
-        if response.status != 200:
-            raise RuntimeError(f"PGM HTTP {response.status} döndürdü.")
-        body = response.read(10 * 1024 * 1024 + 1)
-        if len(body) > 10 * 1024 * 1024:
-            raise RuntimeError("PGM yanıtı izin verilen boyutu aştı.")
-        charset = response.headers.get_content_charset() or "utf-8"
-        return body.decode(charset, errors="replace")
+    last_error: Exception | None = None
+    for attempt in range(1, 4):
+        request = Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) YIMAkademiMonitor/1.1",
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.5",
+                "Connection": "close",
+            },
+        )
+        try:
+            with urlopen(request, timeout=30) as response:
+                if response.status != 200:
+                    raise RuntimeError(f"PGM HTTP {response.status} döndürdü.")
+                body = response.read(10 * 1024 * 1024 + 1)
+                if len(body) > 10 * 1024 * 1024:
+                    raise RuntimeError("PGM yanıtı izin verilen boyutu aştı.")
+                charset = response.headers.get_content_charset() or "utf-8"
+                return body.decode(charset, errors="replace")
+        except Exception as error:
+            last_error = error
+            print(f"PGM bağlantı denemesi {attempt}/3 başarısız: {error}", file=sys.stderr)
+            if attempt < 3:
+                time.sleep(attempt * 5)
+    raise RuntimeError(f"PGM üç denemede yanıt vermedi: {last_error}")
 
 
 def candidates(page: str) -> list[dict[str, str]]:
@@ -156,7 +168,19 @@ def set_output(name: str, value: str) -> None:
 
 
 def main() -> int:
-    page = fetch(PGM_URL)
+    try:
+        page = fetch(PGM_URL)
+    except Exception as error:
+        # Resmî sitenin geçici olarak cevap vermemesi, çalışan güncelleme
+        # kanalını bozmamalı ve yanlış bir değişiklik olarak yorumlanmamalıdır.
+        # Bir sonraki zamanlanmış çalışmada yeniden denenecektir.
+        print(f"::warning title=PGM geçici olarak kullanılamıyor::{error}")
+        set_output("unavailable", "true")
+        set_output("baseline", "false")
+        set_output("changed", "false")
+        set_output("candidate_count", "0")
+        return 0
+
     current = candidates(page)
     digest = fingerprint(current)
     previous = load_state()
@@ -168,6 +192,7 @@ def main() -> int:
     save_state(current, digest)
     set_output("baseline", str(baseline).lower())
     set_output("changed", str(changed).lower())
+    set_output("unavailable", "false")
     set_output("candidate_count", str(len(current)))
     return 0
 
