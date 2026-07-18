@@ -1,0 +1,41 @@
+name: YIM Akademi Resmi Icerik Taslagi
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "review/candidate-scope.json"
+      - "updates/content-pack.json"
+      - "scripts/build_official_content_draft.py"
+      - "scripts/compare_exam_scope.py"
+      - "scripts/extract_pgm_scope.py"
+
+permissions:
+  contents: read
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: PDF okuma destegini kur
+        run: python3 -m pip install --disable-pip-version-check "pypdf>=5,<7"
+
+      - name: Resmi icerik paketi taslagini hazirla
+        run: >-
+          python3 scripts/build_official_content_draft.py
+          updates/content-pack.json
+          review/candidate-scope.json
+
+      - name: Taslak ve raporu sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yim-akademi-resmi-icerik-taslagi
+          path: |
+            review/content-pack.draft.json
+            .quality/content-draft-report.md
+          if-no-files-found: warn
