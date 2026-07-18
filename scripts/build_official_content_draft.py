@@ -163,16 +163,31 @@ def main() -> int:
         target_ids.append(topic_id)
 
     draft = deepcopy(pack)
-    draft["packageVersion"] = str(pack.get("packageVersion", "0.0.0")) + "-draft"
+    current_version = str(pack.get("packageVersion", "0.0.0"))
+    try:
+        major, minor, patch = (int(part) for part in current_version.split("."))
+    except (TypeError, ValueError):
+        errors.append(f"Mevcut paket sürümü geçersiz: {current_version}")
+        major, minor, patch = 0, 0, 0
+    draft["packageVersion"] = f"{major}.{minor}.{patch + 1}"
     draft["publishedAtUtc"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     draft["displayName"] = f"YİM Akademi — {candidate_data.get('examId', 'Yeni sınav')} İNCELEME TASLAĞI"
     draft["examProfile"]["id"] = candidate_data.get("examId", "pgm-aday-sinav-kapsami")
     draft["examProfile"]["announcementUrl"] = candidate_data.get("announcementUrl", "")
+    for field_name in ("commonQuestionCount", "dutyQuestionCount", "totalQuestionCount"):
+        if field_name in candidate_data:
+            draft["examProfile"][field_name] = candidate_data[field_name]
     draft["examProfile"]["commonTopicIds"] = common_ids
     draft["examProfile"]["dutyTopicIds"] = duty_ids
     draft["topics"] = draft_topics
 
-    lines = ["# YİM Akademi resmî içerik taslağı raporu", "", f"- Mevcut paket: `{pack.get('packageVersion', '')}`", f"- Aday sınav: `{candidate_data.get('examId', '')}`", "- Otomatik yayın: **Kapalı**", f"- Taslak üretildi: **{'Hayır' if errors else 'Evet'}**", f"- Korunan/oluşturulan konu: {len(draft_topics)}", f"- Çıkarılmış olabilecek konu: {len(removed)}", "", "## Engelleyici hatalar", ""]
+    meaningful_change = bool(
+        removed
+        or any(match.status != "unchanged" for match in matches)
+        or candidate_data.get("examId") != pack.get("examProfile", {}).get("id")
+        or candidate_data.get("announcementUrl") != pack.get("examProfile", {}).get("announcementUrl")
+    )
+    lines = ["# YİM Akademi resmî içerik taslağı raporu", "", f"- Mevcut paket: `{pack.get('packageVersion', '')}`", f"- Aday sınav: `{candidate_data.get('examId', '')}`", "- Otomatik yayın: **Yalnız tüm güvenlik kapıları geçerse açık**", f"- Anlamlı değişiklik: **{'Evet' if meaningful_change else 'Hayır'}**", f"- Taslak üretildi: **{'Hayır' if errors else 'Evet'}**", f"- Korunan/oluşturulan konu: {len(draft_topics)}", f"- Çıkarılmış olabilecek konu: {len(removed)}", "", "## Engelleyici hatalar", ""]
     lines.extend(f"- {item}" for item in errors or ["Yok."])
     lines.extend(["", "## İnceleme uyarıları", ""])
     lines.extend(f"- {item}" for item in warnings or ["Yok."])
@@ -180,11 +195,18 @@ def main() -> int:
     args.report.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
     if errors:
-        print(json.dumps({"draftReady": False, "errors": errors}, ensure_ascii=False, indent=2))
+        set_output = getattr(extract_module, "set_output")
+        set_output("draft_ready", "false")
+        set_output("meaningful_change", str(meaningful_change).lower())
+        print(json.dumps({"draftReady": False, "meaningfulChange": meaningful_change, "errors": errors}, ensure_ascii=False, indent=2))
         return 0
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(draft, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"draftReady": True, "topics": len(draft_topics), "warnings": warnings}, ensure_ascii=False, indent=2))
+    set_output = getattr(extract_module, "set_output")
+    set_output("draft_ready", "true")
+    set_output("meaningful_change", str(meaningful_change).lower())
+    set_output("package_version", draft["packageVersion"])
+    print(json.dumps({"draftReady": True, "meaningfulChange": meaningful_change, "packageVersion": draft["packageVersion"], "topics": len(draft_topics), "warnings": warnings}, ensure_ascii=False, indent=2))
     return 0
 
 

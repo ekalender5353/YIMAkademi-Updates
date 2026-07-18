@@ -8,6 +8,7 @@ yazılır. Yeterli güven oluşmazsa mevcut aday dosyası değiştirilmez.
 from __future__ import annotations
 
 import argparse
+import hashlib
 from html.parser import HTMLParser
 import io
 import json
@@ -24,6 +25,7 @@ DOCUMENT_SUFFIXES = (".pdf", ".docx")
 COMMON_MARKER = re.compile(r"\bortak\s+(?:sinav\s+)?konular", re.IGNORECASE)
 DUTY_MARKER = re.compile(r"\b(?:gorev|görev)\s+(?:alani|alanı|konular)", re.IGNORECASE)
 ROW_NUMBER = re.compile(r"^\s*(?:\d{1,2}[.)-]|[a-zçğıöşü][.)])\s+", re.IGNORECASE)
+TRAILING_QUESTION_COUNT = re.compile(r"\s+(\d{1,2})\s*$")
 NOISE = re.compile(r"^(?:sayfa\s+\d+|ek[- ]?\d+|sira\s*no|sıra\s*no|konu\s+basligi|konu\s+başlığı|soru\s+sayisi|soru\s+sayısı)$", re.IGNORECASE)
 
 
@@ -136,21 +138,30 @@ def clean_lines(text: str) -> list[str]:
     return result
 
 
-def title_from_line(line: str) -> str | None:
+def title_from_line(line: str) -> tuple[str, int | None] | None:
     numbered = bool(ROW_NUMBER.match(line))
     title = ROW_NUMBER.sub("", line).strip(" :-–—")
     if not numbered or len(title) < 5 or len(title) > 240:
         return None
     if re.fullmatch(r"\d+", title) or NOISE.fullmatch(title):
         return None
-    return title
+    count: int | None = None
+    match = TRAILING_QUESTION_COUNT.search(title)
+    if match:
+        possible = int(match.group(1))
+        title_without_count = title[:match.start()].rstrip(" :-–—")
+        if possible > 0 and len(title_without_count) >= 5:
+            title, count = title_without_count, possible
+    return title, count
 
 
-def parse_scope(text: str) -> tuple[list[str], list[str], list[str]]:
+def parse_scope(text: str) -> tuple[list[str], list[str], list[str], int, int]:
     lines = clean_lines(text)
     common: list[str] = []
     duty: list[str] = []
     notes: list[str] = []
+    common_count = 0
+    duty_count = 0
     group: str | None = None
     for line in lines:
         folded = fold(line)
@@ -162,17 +173,25 @@ def parse_scope(text: str) -> tuple[list[str], list[str], list[str]]:
             continue
         if group is None:
             continue
-        title = title_from_line(line)
-        if not title:
+        parsed = title_from_line(line)
+        if not parsed:
             continue
+        title, question_count = parsed
         target = common if group == "common" else duty
         if fold(title) not in {fold(existing) for existing in target}:
             target.append(title)
+            if question_count:
+                if group == "common":
+                    common_count += question_count
+                else:
+                    duty_count += question_count
     if not common:
         notes.append("Ortak konular bölümü güvenle çıkarılamadı.")
     if not duty:
         notes.append("Görev konuları bölümü güvenle çıkarılamadı.")
-    return common, duty, notes
+    if common_count <= 0 or duty_count <= 0:
+        notes.append("Ortak/görev soru sayıları resmî tablodan güvenle çıkarılamadı.")
+    return common, duty, notes, common_count, duty_count
 
 
 def write_report(path: Path, attempts: list[str], selected: str, common: list[str], duty: list[str], notes: list[str], ready: bool) -> None:
@@ -206,6 +225,8 @@ def main() -> int:
     selected = ""
     best_common: list[str] = []
     best_duty: list[str] = []
+    best_common_count = 0
+    best_duty_count = 0
     notes: list[str] = []
     for announcement in announcements:
         try:
@@ -216,23 +237,35 @@ def main() -> int:
         for title, document_url in documents:
             attempts.append(f"{title}: {document_url}")
             try:
-                common, duty, parse_notes = parse_scope(extract_text(document_url))
+                common, duty, parse_notes, common_count, duty_count = parse_scope(extract_text(document_url))
             except Exception as error:
                 notes.append(f"Ek okunamadı: {document_url} — {error}")
                 continue
             if len(common) + len(duty) > len(best_common) + len(best_duty):
                 selected, best_common, best_duty = document_url, common, duty
+                best_common_count, best_duty_count = common_count, duty_count
                 notes.extend(parse_notes)
 
-    ready = len(best_common) >= 5 and len(best_duty) >= 5 and len(best_common) + len(best_duty) >= 15
+    total_question_count = best_common_count + best_duty_count
+    ready = (
+        len(best_common) >= 5
+        and len(best_duty) >= 5
+        and len(best_common) + len(best_duty) >= 15
+        and best_common_count > 0
+        and best_duty_count > 0
+        and 40 <= total_question_count <= 200
+    )
     write_report(args.report, attempts, selected, best_common, best_duty, notes, ready)
     if ready:
         payload = {
             "schemaVersion": 1,
-            "examId": "pgm-aday-sinav-kapsami",
+            "examId": "adalet-yim-" + hashlib.sha256((announcements[0] + selected).encode("utf-8")).hexdigest()[:12],
             "announcementUrl": announcements[0] if announcements else "",
             "sourceDocumentUrl": selected,
-            "requiresApproval": True,
+            "requiresApproval": False,
+            "commonQuestionCount": best_common_count,
+            "dutyQuestionCount": best_duty_count,
+            "totalQuestionCount": total_question_count,
             "commonTopics": best_common,
             "dutyTopics": best_duty,
         }
@@ -241,6 +274,8 @@ def main() -> int:
     set_output("ready", str(ready).lower())
     set_output("common_count", str(len(best_common)))
     set_output("duty_count", str(len(best_duty)))
+    set_output("common_question_count", str(best_common_count))
+    set_output("duty_question_count", str(best_duty_count))
     return 0
 
 
