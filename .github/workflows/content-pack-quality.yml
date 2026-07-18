@@ -1,0 +1,34 @@
+name: YIM Akademi Icerik Kalite Kontrolu
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "updates/content-pack.json"
+      - "scripts/validate_content_pack.py"
+  pull_request:
+    paths:
+      - "updates/content-pack.json"
+      - "scripts/validate_content_pack.py"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Icerik paketini dogrula
+        run: python3 scripts/validate_content_pack.py updates/content-pack.json
+
+      - name: Kalite raporunu sakla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: yim-akademi-icerik-kalite-raporu
+          path: .quality/content-report.md
+          if-no-files-found: error
