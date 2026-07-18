@@ -1,0 +1,35 @@
+name: YIM Akademi Sinav Kapsami Karsilastirma
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "review/candidate-scope.json"
+      - "updates/content-pack.json"
+      - "scripts/compare_exam_scope.py"
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Yeni sinav kapsamını mevcut paketle karsilastir
+        run: >-
+          python3 scripts/compare_exam_scope.py
+          updates/content-pack.json
+          review/candidate-scope.json
+
+      - name: Karsilastirma raporunu sakla
+        uses: actions/upload-artifact@v4
+        with:
+          name: yim-akademi-sinav-kapsami-karsilastirma
+          path: |
+            .quality/scope-comparison.md
+            .quality/scope-diff.json
+          if-no-files-found: error
