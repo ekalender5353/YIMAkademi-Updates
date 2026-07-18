@@ -17,7 +17,6 @@ jobs:
   monitor:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
     steps:
       - name: Depoyu al
         uses: actions/checkout@v4
@@ -26,10 +25,21 @@ jobs:
         id: monitor
         run: python3 scripts/monitor_official_sources.py
 
+      - name: PDF okuma destegini kur
+        if: steps.monitor.outputs.changed == 'true'
+        run: python3 -m pip install --disable-pip-version-check "pypdf>=5,<7"
+
+      - name: PGM ilan ekinden aday konu listesini hazirla
+        if: steps.monitor.outputs.changed == 'true'
+        id: scope
+        run: python3 scripts/extract_pgm_scope.py
+
       - name: Izleme durumunu kaydet
-        if: steps.monitor.outputs.unavailable != 'true'
         run: |
           git add .monitor/state.json
+          if [ -f review/candidate-scope.json ]; then
+            git add review/candidate-scope.json
+          fi
           if git diff --cached --quiet; then
             exit 0
           fi
@@ -43,6 +53,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ -f .monitor/scope-extraction-report.md ]; then
+            printf '\n---\n\n' >> .monitor/change-report.md
+            cat .monitor/scope-extraction-report.md >> .monitor/change-report.md
+          fi
           gh issue create \
-            --title "PGM sinav veya konu degisikligi algilandi" \
+            --title "PGM sınav/konu değişikliği adayı algılandı" \
+            --body-file .monitor/change-report.md \
+            --label "resmi-kaynak-degisikligi" || \
+          gh issue create \
+            --title "PGM sınav/konu değişikliği adayı algılandı" \
             --body-file .monitor/change-report.md
