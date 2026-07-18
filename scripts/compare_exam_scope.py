@@ -70,14 +70,20 @@ def similarity(left: str, right: str) -> float:
 def load_current(path: Path) -> tuple[dict, list[Topic]]:
     pack = json.loads(path.read_text(encoding="utf-8"))
     topics_by_id = {item["id"]: item for item in pack.get("topics", [])}
+    sources_by_id = {item["id"]: item for item in pack.get("sources", [])}
     profile = pack.get("examProfile", {})
     result: list[Topic] = []
     for group, key in (("Ortak", "commonTopicIds"), ("Görev", "dutyTopicIds")):
         for topic_id in profile.get(key, []):
             item = topics_by_id.get(topic_id)
             if item:
+                source_titles = [
+                    sources_by_id[source_id].get("title", "")
+                    for source_id in item.get("sourceIds") or []
+                    if source_id in sources_by_id
+                ]
                 aliases = tuple(
-                    value for value in [item.get("shortTitle", ""), item.get("summary", ""), *(item.get("tags") or [])]
+                    value for value in [item.get("shortTitle", ""), item.get("summary", ""), *(item.get("tags") or []), *source_titles]
                     if str(value).strip()
                 )
                 result.append(Topic(group=group, title=item.get("title", ""), topic_id=topic_id, aliases=aliases))
