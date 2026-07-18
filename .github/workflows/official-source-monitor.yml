@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Depoyu al
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: PGM degisikliklerini denetle
         id: monitor

@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Depoyu al
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: PDF okuma destegini kur
         run: python3 -m pip install --disable-pip-version-check "pypdf>=5,<7"
@@ -67,7 +67,7 @@ jobs:
 
       - name: Taslak ve raporu sakla
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: yim-akademi-resmi-icerik-taslagi
           path: |
