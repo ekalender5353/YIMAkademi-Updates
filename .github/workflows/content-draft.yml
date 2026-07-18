@@ -5,13 +5,13 @@ on:
   push:
     paths:
       - "review/candidate-scope.json"
-      - "updates/content-pack.json"
       - "scripts/build_official_content_draft.py"
+      - "scripts/promote_content_draft.py"
       - "scripts/compare_exam_scope.py"
       - "scripts/extract_pgm_scope.py"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   draft:
@@ -25,10 +25,36 @@ jobs:
         run: python3 -m pip install --disable-pip-version-check "pypdf>=5,<7"
 
       - name: Resmi icerik paketi taslagini hazirla
+        id: draft
         run: >-
           python3 scripts/build_official_content_draft.py
           updates/content-pack.json
           review/candidate-scope.json
+
+      - name: Taslagi kalite denetiminden gecir
+        if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
+        run: python3 scripts/validate_content_pack.py review/content-pack.draft.json
+
+      - name: Guvenli yayin kapisini calistir
+        if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
+        run: >-
+          python3 scripts/promote_content_draft.py
+          review/content-pack.draft.json
+          review/candidate-scope.json
+          updates/content-pack.json
+          updates/manifest.json
+
+      - name: Dogrulanmis paketi yayinla
+        if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
+        run: |
+          if git diff --quiet -- updates/content-pack.json updates/manifest.json; then
+            exit 0
+          fi
+          git config user.name "yim-akademi-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add updates/content-pack.json updates/manifest.json
+          git commit -m "Dogrulanmis resmi sinav kapsamını otomatik yayinla"
+          git push
 
       - name: Taslak ve raporu sakla
         if: always()
