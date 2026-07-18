@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "examId": "adalet-yim-yeni-sinav",
+  "announcementUrl": "https://pgm.adalet.gov.tr/",
+  "sourceDocumentTitle": "PGM tarafından yayımlanan resmî konu listesi",
+  "commonTopics": [
+    "Türkiye Cumhuriyeti Anayasası",
+    "Atatürk ilkeleri ve inkılap tarihi, ulusal güvenlik",
+    "Devlet teşkilatı ile ilgili mevzuat",
+    "657 sayılı Devlet Memurları Kanunu ve ilgili mevzuat",
+    "Türkçe dil bilgisi ve yazışma ile ilgili kurallar",
+    "Halkla ilişkiler",
+    "Etik davranış ilkeleri",
+    "Bakanlık merkez teşkilatı",
+    "Adlî ve idarî yargı teşkilatı",
+    "Ulusal Yargı Ağı Bilişim Sistemi (UYAP)",
+    "5018 sayılı Kamu Malî Yönetimi ve Kontrol Kanunu"
+  ],
+  "dutyTopics": [
+    "Bakanlık teşkilatı",
+    "Adlî yargı adalet komisyonlarının yapısı ve görevleri",
+    "Adlî ve idarî yargı teşkilatının yapısı ve görevleri",
+    "Elektronik imza ile Ses ve Görüntü Bilişim Sistemi (SEGBİS)",
+    "Resmî yazışmalarda uygulanacak usul ve esaslar",
+    "7201 sayılı Tebligat Kanunu ve ilgili mevzuat",
+    "Memur suçları ve disiplin işlemleri",
+    "Yazı işleri hizmetleri ve harçlar",
+    "5271 sayılı Ceza Muhakemesi Kanunu",
+    "6100 sayılı Hukuk Muhakemeleri Kanunu",
+    "2577 sayılı İdarî Yargılama Usulü Kanunu",
+    "Ceza ve güvenlik tedbirlerinin infazı"
+  ]
+}
