@@ -18,6 +18,7 @@ from pathlib import Path
 import re
 import sys
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -99,7 +100,46 @@ def source_text(source: dict) -> str:
     suffix = Path(urlparse(url).path).suffix.casefold()
     if suffix not in (".pdf", ".docx"):
         raise ValueError("Kaynak doğrudan PDF veya DOCX resmî metnine bağlı değil.")
+    if (urlparse(url).hostname or "").casefold().endswith("mevzuat.gov.tr"):
+        request = Request(url, headers={"User-Agent": "Mozilla/5.0 YIMAkademiOfficialContent/1.0", "Accept": "application/pdf"})
+        with urlopen(request, timeout=60) as response:
+            data = response.read(50 * 1024 * 1024 + 1)
+        if len(data) > 50 * 1024 * 1024 or not data.startswith(b"%PDF"):
+            raise ValueError("Mevzuat kaynağı geçerli bir resmî PDF döndürmedi.")
+        return extract_module.pdf_text(data)
     return extract_module.extract_text(url)
+
+
+def discover_numbered_law(candidate_title: str, existing_sources: list[dict]) -> tuple[dict | None, str | None]:
+    """Numarası açıkça verilen yeni kanunu yalnız resmî Mevzuat PDF'inden çözer.
+
+    Arama motoru veya üçüncü taraf metin kullanılmaz. PDF içinde kanun numarası
+    ve yeterli miktarda mevzuat metni görülmeden kaynak kabul edilmez.
+    """
+    match = LAW_NUMBER.search(candidate_title)
+    if not match:
+        return None, None
+    number = match.group(1)
+    existing_ids = {str(source.get("id", "")).casefold() for source in existing_sources}
+    for family in ("1.5", "1.3"):
+        url = f"https://www.mevzuat.gov.tr/MevzuatMetin/{family}.{number}.pdf"
+        source = {
+            "id": f"kanun-{number}" if f"kanun-{number}" not in existing_ids else f"kanun-{number}-resmi",
+            "title": candidate_title,
+            "authority": "T.C. Mevzuat Bilgi Sistemi",
+            "url": url,
+            "kind": "Legislation",
+            "relevantScope": candidate_title,
+            "monitoringMode": "ManifestOnly",
+        }
+        try:
+            text = source_text(source)
+        except Exception:
+            continue
+        folded = fold(text[:20000])
+        if len(text) >= 1000 and number in folded and ("madde" in folded or "kanun" in folded):
+            return source, text
+    return None, None
 
 
 def new_topic_id(group: str, title: str, existing: set[str]) -> str:
@@ -146,11 +186,18 @@ def main() -> int:
             continue
 
         source, score = find_source(match.candidate.title, sources)
+        discovered_text: str | None = None
+        source_suffix = Path(urlparse(str((source or {}).get("url", ""))).path).suffix.casefold()
+        if source is None or score < 0.78 or source_suffix not in (".pdf", ".docx"):
+            source, discovered_text = discover_numbered_law(match.candidate.title, sources)
+            if source is not None:
+                score = 1.0
+                sources.append(source)
         if source is None or score < 0.78:
             errors.append(f"Yeni konu için güvenilir resmî kaynak eşleşmedi: {match.candidate.title} (güven %{score * 100:.1f})")
             continue
         try:
-            sections = split_articles(source_text(source), str(source.get("title", match.candidate.title)))
+            sections = split_articles(discovered_text or source_text(source), str(source.get("title", match.candidate.title)))
         except Exception as error:
             errors.append(f"Yeni konu metni hazırlanamadı: {match.candidate.title} — {error}")
             continue
@@ -180,6 +227,7 @@ def main() -> int:
     draft["examProfile"]["commonTopicIds"] = common_ids
     draft["examProfile"]["dutyTopicIds"] = duty_ids
     draft["topics"] = draft_topics
+    draft["sources"] = sources
 
     meaningful_change = bool(
         removed
