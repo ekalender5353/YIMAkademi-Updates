@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "1.0.0",
-  "publishedAtUtc": "2026-07-15T17:46:51Z",
+  "packageVersion": "3.1.0",
+  "publishedAtUtc": "2026-07-15T20:19:17Z",
   "contentPackUrl": "https://raw.githubusercontent.com/ekalender5353/YIMAkademi-Updates/main/updates/content-pack.json",
-  "contentPackSha256": "a94bad2f94695f828cb8d65d89289b52eec48ccbb95f7c0fffa476f140bacf09",
-  "contentPackSizeBytes": 300058,
+  "contentPackSha256": "260da149003bd0d3155f921e0d04fc521674b6cbb6d8d2f75e9ec191f61538ce",
+  "contentPackSizeBytes": 2908847,
   "minimumAppVersion": "1.0.0",
-  "releaseNotes": "İlk doğrulanmış YİM Akademi konu paketi ve resmî kaynak izleme altyapısı.",
+  "releaseNotes": "2025 Ek-2/D kesin kapsamına konu kartlarında soru ağırlığı, çalışma yüzdesi ve bölüm sayısı ile konu içi Önemli Süreler ve Sayılar özeti eklendi.",
   "officialAnnouncementUrl": "https://pgm.adalet.gov.tr/"
 }
