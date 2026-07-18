@@ -5,11 +5,15 @@ on:
   push:
     paths:
       - "updates/content-pack.json"
+      - "updates/manifest.json"
       - "scripts/validate_content_pack.py"
+      - "scripts/validate_release_channel.py"
   pull_request:
     paths:
       - "updates/content-pack.json"
+      - "updates/manifest.json"
       - "scripts/validate_content_pack.py"
+      - "scripts/validate_release_channel.py"
 
 permissions:
   contents: read
@@ -24,6 +28,9 @@ jobs:
 
       - name: Icerik paketini dogrula
         run: python3 scripts/validate_content_pack.py updates/content-pack.json
+
+      - name: Yayin kanalini dogrula
+        run: python3 scripts/validate_release_channel.py updates/manifest.json updates/content-pack.json
 
       - name: Kalite raporunu sakla
         if: always()

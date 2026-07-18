@@ -12,6 +12,11 @@ on:
 
 permissions:
   contents: write
+  issues: write
+
+concurrency:
+  group: official-content-draft
+  cancel-in-progress: false
 
 jobs:
   draft:
@@ -44,6 +49,10 @@ jobs:
           updates/content-pack.json
           updates/manifest.json
 
+      - name: Yayin kanalini son kez dogrula
+        if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
+        run: python3 scripts/validate_release_channel.py updates/manifest.json updates/content-pack.json
+
       - name: Dogrulanmis paketi yayinla
         if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
         run: |
@@ -65,3 +74,12 @@ jobs:
             review/content-pack.draft.json
             .quality/content-draft-report.md
           if-no-files-found: warn
+
+      - name: Guvenle derlenemeyen kapsam icin kayit ac
+        if: steps.draft.outputs.draft_ready != 'true' && steps.draft.outputs.meaningful_change == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create \
+            --title "Resmi icerik otomatik yayin guvenlik kapisinda durduruldu" \
+            --body-file .quality/content-draft-report.md || true
