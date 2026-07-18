@@ -1,8 +1,9 @@
 {
   "schemaVersion": 1,
-  "examId": "adalet-yim-yeni-sinav",
+  "examId": "adalet-yim-2025-ek-2-d",
   "announcementUrl": "https://pgm.adalet.gov.tr/",
-  "sourceDocumentTitle": "PGM tarafından yayımlanan resmî konu listesi",
+  "sourceDocumentTitle": "YİM Akademi 3.1.0 doğrulanmış mevcut kapsam — uçtan uca sistem testi",
+  "requiresApproval": true,
   "commonTopics": [
     "Türkiye Cumhuriyeti Anayasası",
     "Atatürk ilkeleri ve inkılap tarihi, ulusal güvenlik",
@@ -12,22 +13,22 @@
     "Halkla ilişkiler",
     "Etik davranış ilkeleri",
     "Bakanlık merkez teşkilatı",
-    "Adlî ve idarî yargı teşkilatı",
-    "Ulusal Yargı Ağı Bilişim Sistemi (UYAP)",
+    "Adlî ve idarî yargı adalet komisyonlarının yapısı ve görevleri ile yargı örgütü",
+    "Ulusal Yargı Ağı Bilişim Sistemi",
     "5018 sayılı Kamu Malî Yönetimi ve Kontrol Kanunu"
   ],
   "dutyTopics": [
     "Bakanlık teşkilatı",
-    "Adlî yargı adalet komisyonlarının yapısı ve görevleri",
-    "Adlî ve idarî yargı teşkilatının yapısı ve görevleri",
+    "Adlî ve idarî yargı adalet komisyonlarının yapısı ve görevleri",
+    "Yargı örgütü",
     "Elektronik imza ile Ses ve Görüntü Bilişim Sistemi (SEGBİS)",
-    "Resmî yazışmalarda uygulanacak usul ve esaslar",
+    "Resmî yazışma kuralları",
     "7201 sayılı Tebligat Kanunu ve ilgili mevzuat",
-    "Memur suçları ve disiplin işlemleri",
-    "Yazı işleri hizmetleri ve harçlar",
+    "Devlet memurları ile ilgili mevzuat",
+    "Yazı işleri hizmetlerinin yürütülmesine ilişkin mevzuat ve yargı harçları",
     "5271 sayılı Ceza Muhakemesi Kanunu",
     "6100 sayılı Hukuk Muhakemeleri Kanunu",
     "2577 sayılı İdarî Yargılama Usulü Kanunu",
-    "Ceza ve güvenlik tedbirlerinin infazı"
+    "5275 sayılı Ceza ve Güvenlik Tedbirlerinin İnfazı Hakkında Kanun"
   ]
 }
