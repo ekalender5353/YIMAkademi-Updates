@@ -4,6 +4,8 @@
   "publishedAtUtc": "2026-07-15T20:19:17Z",
   "contentPackUrl": "https://raw.githubusercontent.com/ekalender5353/YIMAkademi-Updates/main/updates/content-pack.json",
   "contentPackSha256": "260da149003bd0d3155f921e0d04fc521674b6cbb6d8d2f75e9ec191f61538ce",
+  "signatureAlgorithm": "RSA-SHA256",
+  "contentPackSignature": "RMTni6L4/mn7O0mO1o+PcwfVfXzMt4mNllz2A8w2oiQJqD/7HrmZkkZcX/vsNrIG9L1gBcffkYeoduMhFEg20nCiWZWtVWDR9Pgm8ER6S0vCNUQFa0dmMwvIDyTFV4ZEeGd4SC8FA7l2qATuI7nvWw0EFGHfpwkZP+xqWY7ZXgJ10bW56YCO0obMFPlf5bkqKTxDDImbkCaGGzwzmXZEThqgUrnDriiyKAZ/3yaSzlHNUTZ50NcpivaOQPbjS7VAu146ZkT8Mf2XUIsDhkX0VyNNuPk7d8O5/3u6NgHpGHRNEyMKmYCz8DUYknFJIBefI8uNXIijgabczegVe0khb+8/rNQVpHVq3Ieo1PTJvEpEpJS1Kv1hVhtVWL2MDjuiwjnAvmOSsHjkY+RKTa0lwqD8/EJdfWCPa1Q5xf4B2piCFYwmOGatHsT4XLG4/R2jfzv/fvWWq5QrAv29NJvWn8p3e5zgapzYs6MNSAEvhIifU6yBuNBnjW1lH9Q9Q04B",
   "contentPackSizeBytes": 2908847,
   "minimumAppVersion": "1.0.0",
   "releaseNotes": "2025 Ek-2/D kesin kapsamına konu kartlarında soru ağırlığı, çalışma yüzdesi ve bölüm sayısı ile konu içi Önemli Süreler ve Sayılar özeti eklendi.",
