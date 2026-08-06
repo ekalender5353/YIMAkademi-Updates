@@ -6,6 +6,9 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import base64
+import subprocess
+import tempfile
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -45,6 +48,31 @@ def main() -> int:
     expected_hash = str(manifest.get("contentPackSha256", "")).casefold()
     if expected_hash != hashlib.sha256(raw).hexdigest():
         errors.append("Manifestteki SHA-256 içerik paketini doğrulamıyor.")
+    if manifest.get("signatureAlgorithm") != "RSA-SHA256":
+        errors.append("Yayın manifestinde RSA-SHA256 dijital imza algoritması yok.")
+    try:
+        signature = base64.b64decode(str(manifest.get("contentPackSignature", "")), validate=True)
+        if len(signature) != 384:
+            errors.append("İçerik paketi RSA-3072 imza uzunluğu geçersiz.")
+        else:
+            public_key = Path(__file__).with_name("update-signing-public.pem")
+            if not public_key.exists():
+                errors.append("Yayın doğrulama açık anahtarı bulunamadı.")
+            else:
+                with tempfile.NamedTemporaryFile() as signature_file:
+                    signature_file.write(signature)
+                    signature_file.flush()
+                    verification = subprocess.run(
+                        ["openssl", "dgst", "-sha256", "-verify", str(public_key),
+                         "-signature", signature_file.name, str(args.content_pack)],
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                    )
+                    if verification.returncode != 0:
+                        errors.append("İçerik paketinin RSA dijital imzası doğrulanamadı.")
+    except (ValueError, TypeError):
+        errors.append("İçerik paketi dijital imzası geçerli Base64 değil.")
 
     content_url = urlparse(str(manifest.get("contentPackUrl", "")))
     if content_url.scheme != "https" or content_url.hostname != "raw.githubusercontent.com":

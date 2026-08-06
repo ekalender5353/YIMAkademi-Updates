@@ -8,6 +8,9 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import base64
+import subprocess
+import tempfile
 
 
 def load(path: Path) -> dict:
@@ -20,6 +23,7 @@ def main() -> int:
     parser.add_argument("candidate", type=Path)
     parser.add_argument("current", type=Path)
     parser.add_argument("manifest", type=Path)
+    parser.add_argument("--signing-key", type=Path, required=True)
     args = parser.parse_args()
 
     draft, candidate, current, manifest = map(load, (args.draft, args.candidate, args.current, args.manifest))
@@ -45,11 +49,27 @@ def main() -> int:
 
     raw = (json.dumps(draft, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     args.current.write_bytes(raw)
+    if not args.signing_key.is_file():
+        raise SystemExit("GÜVENLİ YAYIN ENGELLENDİ:\n- RSA imzalama özel anahtarı bulunamadı.")
+    with tempfile.NamedTemporaryFile() as signature_file:
+        signing = subprocess.run(
+            ["openssl", "dgst", "-sha256", "-sign", str(args.signing_key),
+             "-out", signature_file.name, str(args.current)],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if signing.returncode != 0:
+            raise SystemExit("GÜVENLİ YAYIN ENGELLENDİ:\n- İçerik paketi dijital olarak imzalanamadı.")
+        signature_file.seek(0)
+        content_signature = base64.b64encode(signature_file.read()).decode("ascii")
     manifest.update({
         "packageVersion": draft["packageVersion"],
         "publishedAtUtc": draft["publishedAtUtc"],
         "contentPackSha256": hashlib.sha256(raw).hexdigest(),
         "contentPackSizeBytes": len(raw),
+        "signatureAlgorithm": "RSA-SHA256",
+        "contentPackSignature": content_signature,
         "releaseNotes": f"{candidate.get('examId')} resmî sınav kapsamı güvenlik kontrollerinden geçerek otomatik yayımlandı.",
         "officialAnnouncementUrl": candidate.get("announcementUrl", ""),
     })
