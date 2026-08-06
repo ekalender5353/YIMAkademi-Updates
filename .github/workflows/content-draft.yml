@@ -42,12 +42,16 @@ jobs:
 
       - name: Guvenli yayin kapisini calistir
         if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
+        env:
+          YIM_UPDATE_SIGNING_PRIVATE_KEY: ${{ secrets.YIM_UPDATE_SIGNING_PRIVATE_KEY }}
         run: >-
+          printf '%s' "$YIM_UPDATE_SIGNING_PRIVATE_KEY" > "$RUNNER_TEMP/yim-update-signing-private.pem" &&
+          chmod 600 "$RUNNER_TEMP/yim-update-signing-private.pem" &&
           python3 scripts/promote_content_draft.py
-          review/content-pack.draft.json
-          review/candidate-scope.json
-          updates/content-pack.json
-          updates/manifest.json
+          review/content-pack.draft.json review/candidate-scope.json
+          updates/content-pack.json updates/manifest.json
+          --signing-key "$RUNNER_TEMP/yim-update-signing-private.pem" &&
+          rm -f "$RUNNER_TEMP/yim-update-signing-private.pem"
 
       - name: Yayin kanalini son kez dogrula
         if: steps.draft.outputs.draft_ready == 'true' && steps.draft.outputs.meaningful_change == 'true'
